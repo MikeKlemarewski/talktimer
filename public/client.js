@@ -68,12 +68,12 @@ function getGraphData(){
 function startClock(index){
 
 	var j;
-	timers[index].trigger("start");
 	for(j = 0; j < timers.length; j++){
 		if(j!==index){
-			timers[j].find('.stop').click();
+			timers[j].trigger("stop");
 		}
 	}
+	timers[index].trigger("start");
 }
 
 function stopClock(index){
