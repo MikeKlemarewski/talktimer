@@ -87,7 +87,12 @@ function getTime(id){
 	for(i = 0; i < timers.length; i++){
 		times.push(timers[i].find('.seconds').text());
 	}
-	socket.emit('init_time', id, times);
+	if(id){
+		socket.emit('init_time', id, times);
+	}
+	else{
+		socket.emit('save_time', times);
+	}
 }
 
 function setClocks(times){

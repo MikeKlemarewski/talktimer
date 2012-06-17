@@ -2,7 +2,8 @@ var app = require('express').createServer();
 var io = require('socket.io').listen(app);
 
 var MY_APP = {
-		'running_clock':-1
+		'running_clock':-1,
+		'saved_timers':[0,0,0]
 	};
 
 require('jade');
@@ -19,6 +20,7 @@ app.get('/', function(req, res){
   res.render('index.html');
 });
 
+setInterval(getTimes, 1000);
 
 io.on('connection', function(client){
 	num_clients = Object.keys(io.sockets.manager.connected).length;
@@ -39,16 +41,19 @@ io.on('connection', function(client){
 		io.sockets.manager.sockets.sockets[id].emit('set_clocks', times);
 	});
 
+	client.on('save_time', function(times){
+		saveTimers(times);
+	});
 
 	if(num_clients !== 1){
-		console.log("Not First!");
-		index     = Math.floor(Math.random()*(num_clients - 1));
-		socket_id = Object.keys(io.sockets.manager.connected)[index];
-		socket    = io.sockets.manager.sockets.sockets[socket_id];
+		socket = randomSocket();
 		socket.emit('get_time', client.id);
 		if(MY_APP.running_clock !== -1){
 			client.emit('start_clock', MY_APP.running_clock);
 		}
+	}
+	else{
+		client.emit('set_clocks', MY_APP.saved_timers);
 	}
 
 	listClients();
@@ -64,13 +69,39 @@ function clientDisconnect(client){
 
 	//The last person is disconnecting
 	if(Object.keys(io.sockets.manager.connected).length === 1){
+		client.emit('get_time');
 		running_clock = -1;
+
 	}
 }
 
 function setRunningClock(index){
 	MY_APP.running_clock = index;
-	console.log("SETTING: " + MY_APP.running_clock);
+}
+
+
+function getTimes(){
+	socket = randomSocket();
+	if(socket){
+		socket.emit('get_time');
+	}
+}
+
+function saveTimers(times){
+	MY_APP.saved_timers = times;
+}
+
+function randomSocket(){
+	num_clients = Object.keys(io.sockets.manager.connected).length;
+	if(num_clients > 0){
+		index       = Math.floor(Math.random()*(num_clients - 1));
+		socket_id   = Object.keys(io.sockets.manager.connected)[index];
+		socket      = io.sockets.manager.sockets.sockets[socket_id];
+		return socket;
+	}
+	else{
+		return null;
+	}
 }
 
 app.listen(3000);
